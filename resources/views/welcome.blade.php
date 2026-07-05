@@ -25,5 +25,5 @@
                 + Tambah Transaksi
             </a>
         </div>
-    </div>
+</div>
 @endsection
