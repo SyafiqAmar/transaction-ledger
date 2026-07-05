@@ -9,4 +9,7 @@ Route::get('/ping', function () {
 });
 
 // 5 route CRUD JSON: index, store, show, update, destroy (tanpa create/edit)
-Route::apiResource('transactions', TransactionController::class);
+// ->names('api.transactions') = kasih nama "api.transactions.*" biar TIDAK
+// tabrakan dengan route web yang namanya "transactions.*".
+Route::apiResource('transactions', TransactionController::class)
+    ->names('api.transactions');
