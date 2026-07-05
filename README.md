@@ -75,7 +75,7 @@ Buka **http://127.0.0.1:8000** di browser.
 curl -X POST http://127.0.0.1:8000/api/transactions \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
-  -d '{"sender":"Alice","receiver":"Bob","amount":100,"hash":"abc123","status":"pending"}'
+  -d '{"sender":"Aman","receiver":"Amin","amount":100,"hash":"abc123","status":"pending"}'
 ```
 
 Response (`201 Created`):
@@ -84,12 +84,8 @@ Response (`201 Created`):
 {
   "success": true,
   "message": "Transaksi berhasil dibuat",
-  "data": { "id": 1, "sender": "Alice", "receiver": "Bob", "amount": "100.00", "hash": "abc123", "status": "pending" }
+  "data": { "id": 1, "sender": "Aman", "receiver": "Amin", "amount": "100.00", "hash": "abc123", "status": "pending" }
 }
 ```
 
 ---
-
-## Lisensi
-
-Proyek pembelajaran. Framework Laravel berlisensi [MIT](https://opensource.org/licenses/MIT).
