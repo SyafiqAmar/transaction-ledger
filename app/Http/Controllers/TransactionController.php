@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\XenditService;
 use Illuminate\Http\Request;
 
 class TransactionController extends Controller
@@ -37,6 +38,13 @@ class TransactionController extends Controller
     public function show(Transaction $transaction)
     {
         return view('transactions.show', compact('transaction'));
+    }
+
+    public function pay(Transaction $transaction, XenditService $xendit)
+    {
+        $invoice = $xendit->createInvoice($transaction);
+
+        return redirect()->away($invoice['invoice_url']);
     }
 
     public function edit(Transaction $transaction)

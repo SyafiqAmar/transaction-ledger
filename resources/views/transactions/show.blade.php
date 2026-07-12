@@ -36,6 +36,13 @@
     </div>
 
     <div class="mt-4 flex gap-2">
+        <form action="{{ route('transactions.pay', $transaction) }}" method="POST">
+            @csrf
+            <button type="submit"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                💳 Bayar via Xendit
+            </button>
+</form>
         <a href="{{ route('transactions.edit', $transaction) }}"
            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Edit</a>
         <form action="{{ route('transactions.destroy', $transaction) }}" method="POST"

@@ -2,14 +2,15 @@
 
 use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\XenditWebhookController;
 
-// Route tes: pastikan API hidup. Buka /api/ping → {"message":"pong"}
-Route::get('/ping', function () {
-    return ['message' => 'pong'];
+Route::get('/test', function () {
+    return ['message' => 'oke'];
 });
 
-// 5 route CRUD JSON: index, store, show, update, destroy (tanpa create/edit)
-// ->names('api.transactions') = kasih nama "api.transactions.*" biar TIDAK
-// tabrakan dengan route web yang namanya "transactions.*".
+
 Route::apiResource('transactions', TransactionController::class)
     ->names('api.transactions');
+
+
+Route::post('/xendit/webhook', [XenditWebhookController::class, 'handle']);
