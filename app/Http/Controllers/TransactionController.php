@@ -19,20 +19,21 @@ class TransactionController extends Controller
         return view('transactions.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, XenditService $xendit)
     {
         $validated = $request->validate([
             'sender' => 'required|string|max:255',
             'receiver' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|min:10000',
             'hash' => 'required|string|unique:transactions,hash',
             'status' => 'required|in:pending,confirmed,failed',
         ]);
 
-        Transaction::create($validated);
+        $transaction = Transaction::create($validated);
 
-        return redirect()->route('transactions.index')
-                         ->with('success', 'Transaksi berhasil ditambahkan!');
+        $invoice = $xendit->createInvoice($transaction);
+
+        return redirect()->away($invoice['invoice_url']);
     }
 
     public function show(Transaction $transaction)
@@ -57,7 +58,7 @@ class TransactionController extends Controller
         $validated = $request->validate([
             'sender' => 'required|string|max:255',
             'receiver' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'required|numeric|min:10000',
             'hash' => 'required|string|unique:transactions,hash,' . $transaction->id,
             'status' => 'required|in:pending,confirmed,failed',
         ]);

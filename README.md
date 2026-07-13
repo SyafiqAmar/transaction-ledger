@@ -21,6 +21,7 @@ Setiap transaksi punya field: `sender`, `receiver`, `amount`, `hash`, dan
 | **SQLite** | Database (1 file, tanpa server) |
 | **Blade** | Template engine (tampilan) |
 | **Tailwind CSS** | Styling (via CDN, tanpa build/npm) |
+| **Xendit** | Payment gateway (invoice + webhook) |
 
 ---
 
@@ -46,6 +47,30 @@ php artisan serve
 Buka **http://127.0.0.1:8000** di browser.
 
 ---
+
+## Konfigurasi Xendit
+
+Fitur ini membutuhkan kredensial Xendit agar fitur pembayaran bisa digunakan. 
+Setelah `cp .env.example .env`, isi 2 variabel ini di file `.env`:
+
+​```env
+XENDIT_SECRET_KEY=xnd_development_xxxxx
+XENDIT_CALLBACK_TOKEN=xxxxx
+​```
+ganti xxx dengan token yang di dapat dari xendit.
+
+**Cara dapat kredensialnya:**
+
+1. Daftar / login di [dashboard Xendit](https://dashboard.xendit.co).
+2. **Secret Key** — menu *Settings → API Keys*. Pakai key **test** (diawali
+   `xnd_development_`) untuk percobaan.
+3. **Callback Token** — menu *Settings → Webhooks → Webhook verification token*.
+
+**Webhook (biar status update otomatis):**
+
+- Di *Settings → Webhooks*, set URL webhook untuk event **Invoice** ke:
+  `https://<domain-kamu>/api/xendit/webhook`
+
 ### Web (mengembalikan HTML)
 
 | Method | URL | Keterangan |
@@ -53,6 +78,8 @@ Buka **http://127.0.0.1:8000** di browser.
 | GET | `/` | Landing page |
 | GET | `/transactions` | Daftar transaksi |
 | GET | `/transactions/create` | Form tambah |
+| POST | `/transactions/{id}/pay` | Membuat invoice & mengarahkan ke pembayaran via Xendit |
+| POST | `/api/xendit/webhook` | Menerima notifikasi pembayaran dari Xendit |
 | POST | `/transactions` | Simpan transaksi baru |
 | GET | `/transactions/{id}` | Detail transaksi |
 | GET | `/transactions/{id}/edit` | Form edit |
