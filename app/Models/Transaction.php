@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Transaction extends Model
 {
     protected $fillable = [
+        'user_id',
         'sender',
         'receiver',
+        'ticker',
+        'crypto_amount',
         'amount',
         'hash',
         'status'

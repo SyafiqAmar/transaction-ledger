@@ -40,4 +40,9 @@ return [
         'callback_token' => env('XENDIT_CALLBACK_TOKEN'),
     ],
 
+    'crypto' => [
+    'url' => env('CRYPTO_SERVICE_URL', 'http://localhost:3000'),
+    ],
+
+
 ];

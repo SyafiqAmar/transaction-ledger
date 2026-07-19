@@ -1,8 +1,9 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Daftar Transaksi</h2>
+    </x-slot>
 
-@section('title', 'Daftar Transaksi')
-
-@section('content')
+    <div class="py-12 max-w-6xl mx-auto sm:px-6 lg:px-8">
     <div class="flex items-center justify-between mb-4">
         <h1 class="text-2xl font-bold">Daftar Transaksi</h1>
         <a href="{{ route('transactions.create') }}"
@@ -60,4 +61,5 @@
             </tbody>
         </table>
     </div>
-@endsection
+    </div>
+</x-app-layout>

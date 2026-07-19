@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
+use App\Services\CryptoService;
+use App\Services\FrankfurterService;
 
 class TransactionController extends Controller
 {
     public function index()
     {
-        $transactions = Transaction::latest()->get();
+        $transactions = Transaction::where('user_id', auth()->id())->get();
         return view('transactions.index', compact('transactions'));
     }
 
@@ -19,22 +21,32 @@ class TransactionController extends Controller
         return view('transactions.create');
     }
 
-    public function store(Request $request, XenditService $xendit)
-    {
-        $validated = $request->validate([
-            'sender' => 'required|string|max:255',
-            'receiver' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:10000',
-            'hash' => 'required|string|unique:transactions,hash',
-            'status' => 'required|in:pending,confirmed,failed',
-        ]);
+    public function store(Request $request, XenditService $xendit, CryptoService $crypto, FrankfurterService $frankfurter)
+{
+    $validated = $request->validate([
+        'sender' => 'required|string|max:255',
+        'receiver' => 'required|string|max:255',
+        'ticker' => 'required|in:BTC/USDT,SOL/USDT,TRX/USDT',
+        'crypto_amount' => 'required|numeric|min:0.00000001',
+        'hash' => 'required|string|unique:transactions,hash',
+    ]);
 
-        $transaction = Transaction::create($validated);
+    $symbol = str_replace('/', '-', $validated['ticker']);
+    $priceUsd = $crypto->getPrice('binance', $symbol);
+    $usdAmount = $validated['crypto_amount'] * $priceUsd;
+    $idrAmount = $frankfurter->convertUsdToIdr($usdAmount);
 
-        $invoice = $xendit->createInvoice($transaction);
+    $validated['amount'] = $idrAmount;
+    $validated['user_id'] = auth()->id();
+    $validated['status'] = 'pending';
 
-        return redirect()->away($invoice['invoice_url']);
-    }
+    $transaction = Transaction::create($validated);
+
+    $invoice = $xendit->createInvoice($transaction);
+
+    return redirect()->away($invoice['invoice_url']);
+}
+
 
     public function show(Transaction $transaction)
     {
@@ -60,7 +72,6 @@ class TransactionController extends Controller
             'receiver' => 'required|string|max:255',
             'amount' => 'required|numeric|min:10000',
             'hash' => 'required|string|unique:transactions,hash,' . $transaction->id,
-            'status' => 'required|in:pending,confirmed,failed',
         ]);
 
         $transaction->update($validated);

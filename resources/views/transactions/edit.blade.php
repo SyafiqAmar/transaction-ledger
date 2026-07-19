@@ -1,8 +1,9 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Edit Transaksi</h2>
+    </x-slot>
 
-@section('title', 'Edit Transaksi')
-
-@section('content')
+    <div class="py-12 max-w-4xl mx-auto sm:px-6 lg:px-8">
     <h1 class="text-2xl font-bold mb-4">Edit Transaksi</h1>
 
     @if ($errors->any())
@@ -44,15 +45,6 @@
                    class="w-full border rounded px-3 py-2">
         </div>
 
-        <div>
-            <label class="block text-sm font-medium mb-1">Status</label>
-            @php $currentStatus = old('status', $transaction->status); @endphp
-            <select name="status" class="w-full border rounded px-3 py-2">
-                <option value="pending"   @selected($currentStatus === 'pending')>pending</option>
-                <option value="confirmed" @selected($currentStatus === 'confirmed')>confirmed</option>
-                <option value="failed"    @selected($currentStatus === 'failed')>failed</option>
-            </select>
-        </div>
 
         <div class="flex gap-2">
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
@@ -62,4 +54,5 @@
                class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded">Batal</a>
         </div>
     </form>
-@endsection
+    </div>
+</x-app-layout>
