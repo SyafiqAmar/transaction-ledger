@@ -4,13 +4,18 @@ Prototype ini dibuat sebagai simulasi bagaimana suatu traksaksi itu masih dalam 
 ---
 # Fitur yang dibuat
 
+- **Login/Register (Laravel Breeze)** — tiap user punya akun sendiri, transaksi & koneksi exchange di-scope per user.
 - **CRUD via Web** — tambah, lihat, edit, dan hapus transaksi lewat browser.
 - **REST API (JSON)** — endpoint `/api/transactions` untuk CRUD via program.
+- **Konversi Crypto → IDR otomatis** — saat tambah transaksi, user pilih ticker (BTC/USDT, SOL/USDT, TRX/USDT) + input jumlah crypto, lalu otomatis dikonversi: `crypto → USD` (harga real-time via exchange) → `USD → IDR` (kurs harian Frankfurter) → dikirim sebagai nominal invoice Xendit.
+- **Koneksi akun exchange (Binance/Bybit/Indodax)** — user simpan API key exchange miliknya sendiri (dienkripsi di database) untuk cek saldo (balance) & ambil harga ticker.
+- **Halaman Wallet** — menampilkan saldo crypto user dari tiap exchange yang terhubung (testnet).
 - **Validasi input** — aturan di sisi server (field wajib, tipe data, nilai enum).
 - **Landing page** — halaman sambutan yang menjelaskan konteks proyek.
 
-Setiap transaksi punya field: `sender`, `receiver`, `amount`, `hash`, dan
-`status` (`pending` / `confirmed` / `failed`).
+Setiap transaksi punya field: `sender`, `receiver`, `ticker`, `crypto_amount`,
+`amount` (hasil konversi ke IDR), `hash`, dan `status` (`pending` / `confirmed`
+/ `failed`, di-update otomatis lewat webhook Xendit — tidak bisa diubah manual).
 
 ---
 
@@ -20,8 +25,46 @@ Setiap transaksi punya field: `sender`, `receiver`, `amount`, `hash`, dan
 | **PHP 8.3** | Bahasa |
 | **SQLite** | Database (1 file, tanpa server) |
 | **Blade** | Template engine (tampilan) |
-| **Tailwind CSS** | Styling (via CDN, tanpa build/npm) |
+| **Laravel Breeze** | Auth scaffolding (login/register) |
+| **Tailwind CSS** | Styling |
 | **Xendit** | Payment gateway (invoice + webhook) |
+| **CCXT (Node.js)** | Ambil harga ticker & saldo dari Binance/Bybit/Indodax, lewat microservice kecil di `crypto-service/` |
+| **Frankfurter API** | Kurs USD → IDR (gratis, tanpa API key) |
+
+---
+
+## Arsitektur Konversi Crypto
+
+Karena **CCXT adalah library Node.js** (bukan PHP), Laravel tidak bisa
+memanggilnya langsung. Solusinya: microservice kecil Express (`crypto-service/`)
+yang membungkus CCXT dan expose 2 endpoint HTTP, dipanggil dari Laravel lewat
+`Http` client (`app/Services/CryptoService.php`):
+
+```
+Laravel (app/Services/CryptoService.php)
+   │  HTTP request
+   ▼
+crypto-service/index.js (Express + CCXT)   ← Node.js, port 3000
+   │  fetchTicker() / fetchBalance()
+   ▼
+Binance / Bybit / Indodax (testnet)
+```
+
+Untuk pengembangan, exchange di-set ke **sandbox/testnet mode**
+(`exchange.setSandboxMode(true)`) supaya tidak menyentuh dana asli.
+
+### Menjalankan `crypto-service`
+
+```bash
+cd crypto-service
+npm install
+node index.js
+```
+Servis ini harus tetap berjalan (di terminal terpisah) selama menggunakan
+fitur convert harga/balance. Tambahkan di `.env` Laravel:
+```env
+CRYPTO_SERVICE_URL=http://localhost:3000
+```
 
 ---
 
@@ -71,20 +114,25 @@ ganti xxx dengan token yang di dapat dari xendit.
 - Di *Settings → Webhooks*, set URL webhook untuk event **Invoice** ke:
   `https://<domain-kamu>/api/xendit/webhook`
 
-### Web (mengembalikan HTML)
+### Web (mengembalikan HTML, wajib login)
 
 | Method | URL | Keterangan |
 |--------|-----|------------|
 | GET | `/` | Landing page |
-| GET | `/transactions` | Daftar transaksi |
-| GET | `/transactions/create` | Form tambah |
-| POST | `/transactions/{id}/pay` | Membuat invoice & mengarahkan ke pembayaran via Xendit |
-| POST | `/api/xendit/webhook` | Menerima notifikasi pembayaran dari Xendit |
-| POST | `/transactions` | Simpan transaksi baru |
+| GET | `/login`, `/register` | Auth (Breeze) |
+| GET | `/dashboard` | Shortcut ke "Tambah Transaksi" & "Wallet" |
+| GET | `/transactions` | Daftar transaksi milik user yang login |
+| GET | `/transactions/create` | Form tambah (pilih ticker + jumlah crypto) |
+| POST | `/transactions` | Simpan transaksi baru → auto-convert crypto→IDR → redirect ke invoice Xendit |
 | GET | `/transactions/{id}` | Detail transaksi |
 | GET | `/transactions/{id}/edit` | Form edit |
 | PUT/PATCH | `/transactions/{id}` | Update transaksi |
 | DELETE | `/transactions/{id}` | Hapus transaksi |
+| POST | `/transactions/{id}/pay` | Membuat ulang invoice & mengarahkan ke pembayaran via Xendit |
+| GET | `/exchange-credentials` | Form hubungkan API key exchange (Binance/Bybit/Indodax) |
+| POST | `/exchange-credentials` | Simpan/update API key (terenkripsi) |
+| GET | `/wallet` | Saldo crypto per exchange yang terhubung |
+| POST | `/api/xendit/webhook` | Menerima notifikasi pembayaran dari Xendit (auto-update status) |
 
 ### API (mengembalikan JSON)
 

@@ -21,31 +21,56 @@ class TransactionController extends Controller
         return view('transactions.create');
     }
 
+    public function pricePreview(Request $request, CryptoService $crypto, FrankfurterService $frankfurter)
+    {
+        $validated = $request->validate([
+            'ticker' => 'required|in:BTC/USDT,ETH/USDT,BNB/USDT,SOL/USDT,TRX/USDT',
+        ]);
+
+        $symbol = str_replace('/', '-', $validated['ticker']);
+        $priceUsd = $crypto->getPrice('binance', $symbol);
+        $priceIdr = $frankfurter->convertUsdToIdr($priceUsd);
+
+        return response()->json(['price_idr' => $priceIdr]);
+    }
+
     public function store(Request $request, XenditService $xendit, CryptoService $crypto, FrankfurterService $frankfurter)
-{
-    $validated = $request->validate([
-        'sender' => 'required|string|max:255',
-        'receiver' => 'required|string|max:255',
-        'ticker' => 'required|in:BTC/USDT,SOL/USDT,TRX/USDT',
-        'crypto_amount' => 'required|numeric|min:0.00000001',
-        'hash' => 'required|string|unique:transactions,hash',
-    ]);
+    {
+        $validated = $request->validate([
+            // 'sell' sementara di-hide dari form: belum ada alur integrasi Xendit
+            // untuk kasus user MENERIMA Rupiah (bukan bayar/invoice).
+            'type' => 'required|in:buy,send',
+            'ticker' => 'required|in:BTC/USDT,ETH/USDT,BNB/USDT,SOL/USDT,TRX/USDT',
+            'crypto_amount' => 'required|numeric|min:0.00000001',
+            'hash' => 'required|string|unique:transactions,hash',
+            'sender' => 'required_if:type,send|nullable|string|max:255',
+            'receiver' => 'required_if:type,send|nullable|string|max:255',
+        ]);
 
-    $symbol = str_replace('/', '-', $validated['ticker']);
-    $priceUsd = $crypto->getPrice('binance', $symbol);
-    $usdAmount = $validated['crypto_amount'] * $priceUsd;
-    $idrAmount = $frankfurter->convertUsdToIdr($usdAmount);
+        $symbol = str_replace('/', '-', $validated['ticker']);
+        $priceUsd = $crypto->getPrice('binance', $symbol);
+        $usdAmount = $validated['crypto_amount'] * $priceUsd;
+        $idrAmount = $frankfurter->convertUsdToIdr($usdAmount);
 
-    $validated['amount'] = $idrAmount;
-    $validated['user_id'] = auth()->id();
-    $validated['status'] = 'pending';
+        $userName = auth()->user()->name;
 
-    $transaction = Transaction::create($validated);
+        $validated['amount'] = $idrAmount;
+        $validated['user_id'] = auth()->id();
+        $validated['status'] = 'pending';
 
-    $invoice = $xendit->createInvoice($transaction);
+        // Buy/sell tidak minta sender/receiver dari user, isi otomatis
+        // supaya tetap punya makna (siapa asal & tujuan crypto-nya).
+        if ($validated['type'] === 'buy') {
+            $validated['sender'] = 'Exchange';
+            $validated['receiver'] = $userName;
+        }
 
-    return redirect()->away($invoice['invoice_url']);
-}
+        $transaction = Transaction::create($validated);
+
+        $invoice = $xendit->createInvoice($transaction);
+
+        return redirect()->away($invoice['invoice_url']);
+    }
 
 
     public function show(Transaction $transaction)

@@ -21,6 +21,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/transactions/{transaction}/pay', [TransactionController::class, 'pay'])
         ->name('transactions.pay');
+    Route::get('/transactions/price-preview', [TransactionController::class, 'pricePreview'])
+        ->name('transactions.price-preview');
     Route::resource('transactions', TransactionController::class);
     Route::get('/exchange-credentials', [ExchangeCredentialController::class, 'index'])
         ->name('exchange-credentials.index');
